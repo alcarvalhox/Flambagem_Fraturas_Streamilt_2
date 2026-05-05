@@ -55,7 +55,7 @@ SMAC_COORDS = {
     ("Alumínio", "SP"): (-23.54, -47.26),
     ("Andrelândia", "MG"): (-21.74, -44.31),
     ("Arantina", "MG"): (-21.91, -44.26),
-    ("Barbacena", "MG"): (-21.23, -43.77),
+    ("Barbacena", "MG"): (-21.23, -43.70),
     ("Barra do Piraí", "RJ"): (-22.47, -43.83),
     ("Barra Mansa", "RJ"): (-22.54, -44.17),
     ("Belo Horizonte", "MG"): (-19.98, -43.959),
