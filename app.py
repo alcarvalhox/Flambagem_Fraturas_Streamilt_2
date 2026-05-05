@@ -49,6 +49,101 @@ SMAC_CITY_STATE = {
 SMAC_CITIES = sorted(SMAC_CITY_STATE.keys())
 
 # =========================
+# COORDENADAS FIXAS DO SMAC (Extraídas do CSV)
+# =========================
+SMAC_COORDS = {
+    ("Alumínio", "SP"): (-23.54, -47.26),
+    ("Andrelândia", "MG"): (-21.74, -44.31),
+    ("Arantina", "MG"): (-21.91, -44.26),
+    ("Barbacena", "MG"): (-21.23, -43.77),
+    ("Barra do Piraí", "RJ"): (-22.47, -43.83),
+    ("Barra Mansa", "RJ"): (-22.54, -44.17),
+    ("Belo Horizonte", "MG"): (-19.98, -43.959),
+    ("Belo Vale", "MG"): (-20.41, -44.02),
+    ("Bom Jardim de Minas", "MG"): (-21.95, -44.19),
+    ("Brotas", "SP"): (-22.28, -48.13),
+    ("Brumadinho", "MG"): (-20.14, -44.2),
+    ("Caçapava", "SP"): (-23.1, -45.71),
+    ("Cachoeira Paulista", "SP"): (-22.67, -45.01),
+    ("Campinas", "SP"): (-22.91, -47.06),
+    ("Carandaí", "MG"): (-20.95, -43.81),
+    ("Comendador Levy Gasparian", "RJ"): (-22.03, -43.21),
+    ("Congonhas", "MG"): (-20.5, -43.86),
+    ("Conselheiro Lafaiete", "MG"): (-20.66, -43.79),
+    ("Coronel Xavier Chaves", "MG"): (-21.02, -44.22),
+    ("Cruzeiro", "SP"): (-22.58, -44.96),
+    ("Cubatão", "SP"): (-23.9, -46.43),
+    ("Dois Córregos", "SP"): (-22.37, -48.38),
+    ("Embu das Artes", "SP"): (-23.65, -46.85),
+    ("Engenheiro Paulo de Frontin", "RJ"): (-22.55, -43.68),
+    ("Entre Rios de Minas", "MG"): (-20.67, -44.07),
+    ("Francisco Morato", "SP"): (-23.28, -46.75),
+    ("Franco da Rocha", "SP"): (-23.32, -46.73),
+    ("Guararema", "SP"): (-23.42, -46.04),
+    ("Guaratinguetá", "SP"): (-22.82, -45.19),
+    ("Ibirité", "MG"): (-20.02, -44.06),
+    ("Iracemápolis", "SP"): (-22.58, -47.52),
+    ("Itabirito", "MG"): (-20.25, -43.8),
+    ("Itaguaí", "RJ"): (-22.85, -43.78),
+    ("Itaquaquecetuba", "SP"): (-23.49, -46.35),
+    ("Itatiaia", "RJ"): (-22.5, -44.56),
+    ("Itirapina", "SP"): (-22.25, -47.82),
+    ("Itu", "SP"): (-23.26, -47.3),
+    ("Jacareí", "SP"): (-23.31, -45.97),
+    ("Japeri", "RJ"): (-22.64, -43.65),
+    ("Jaú", "SP"): (-22.3, -48.56),
+    ("Jeceaba", "MG"): (-20.54, -43.98),
+    ("Juiz de Fora", "MG"): (-21.76, -43.35),
+    ("Jundiaí", "SP"): (-23.19, -46.88),
+    ("Lavrinhas", "SP"): (-22.57, -44.9),
+    ("Limeira", "SP"): (-22.57, -47.4),
+    ("Lorena", "SP"): (-22.73, -45.13),
+    ("Madre de Deus de Minas", "MG"): (-21.48, -44.33),
+    ("Mairinque", "SP"): (-23.55, -47.18),
+    ("Mangaratiba", "RJ"): (-22.95, -44.04),
+    ("Matias Barbosa", "MG"): (-21.87, -43.32),
+    ("Mauá", "SP"): (-23.67, -46.46),
+    ("Mendes", "RJ"): (-22.53, -43.73),
+    ("Mesquita", "RJ"): (-22.78, -43.43),
+    ("Moeda", "MG"): (-20.33, -44.05),
+    ("Mogi das Cruzes", "SP"): (-23.52, -46.19),
+    ("Nova Lima", "MG"): (-19.99, -43.85),
+    ("Ouro Preto", "MG"): (-20.29, -43.51),
+    ("Paracambi", "RJ"): (-22.61, -43.71),
+    ("Paraíba do Sul", "RJ"): (-22.16, -43.29),
+    ("Passa Vinte", "MG"): (-22.21, -44.23),
+    ("Pederneiras", "SP"): (-22.35, -48.78),
+    ("Pindamonhangaba", "SP"): (-22.92, -45.46),
+    ("Pinheiral", "RJ"): (-22.51, -44.0),
+    ("Porto Real", "RJ"): (-22.42, -44.29),
+    ("Praia Grande", "SP"): (-24.01, -46.4),
+    ("Quatis", "RJ"): (-22.41, -44.26),
+    ("Queimados", "RJ"): (-22.72, -43.56),
+    ("Queluz", "SP"): (-22.54, -44.77),
+    ("Resende", "RJ"): (-22.47, -44.45),
+    ("Resende Costa", "MG"): (-20.92, -44.24),
+    ("Ribeirão Pires", "SP"): (-23.71, -46.41),
+    ("Rio Claro", "SP"): (-22.41, -47.56),
+    ("Rio de Janeiro", "RJ"): (-22.861, -43.411),
+    ("Santo André", "SP"): (-23.66, -46.54),
+    ("Santos", "SP"): (-23.9, -46.33),
+    ("Santos Dumont", "MG"): (-21.46, -43.55),
+    ("São Brás do Suaçuí", "MG"): (-20.63, -43.95),
+    ("São Caetano do Sul", "SP"): (-23.62, -46.55),
+    ("São João del Rei", "MG"): (-21.14, -44.26),
+    ("São Joaquim de Bicas", "MG"): (-20.05, -44.27),
+    ("São José dos Campos", "SP"): (-23.18, -45.89),
+    ("São Paulo", "SP"): (-23.496, -46.62),
+    ("Sarzedo", "MG"): (-20.04, -44.15),
+    ("Seropédica", "RJ"): (-22.74, -43.71),
+    ("Taubaté", "SP"): (-23.03, -45.56),
+    ("Três Rios", "RJ"): (-22.12, -43.21),
+    ("Várzea Paulista", "SP"): (-23.21, -46.83),
+    ("Vassouras", "RJ"): (-22.4, -43.66),
+    ("Volta Redonda", "RJ"): (-22.52, -44.1),
+}
+
+# =========================
 # UI
 # =========================
 st.set_page_config(page_title="SMAC • Previsão & Histórico", layout="wide")
@@ -57,12 +152,8 @@ st.title("🌦️ SMAC • Previsão (até 60 dias) & Histórico (Hourly + Diár
 with st.sidebar:
     st.header("⚙️ Configurações")
     DEBUG = st.checkbox("Modo debug", value=False)
-    
     st.divider()
-
-    st.subheader("🧭 Mapa de coordenadas SMAC (recomendado)")
-    st.caption("Envie um CSV/XLSX com colunas: city, uf, lat, lon. Isso evita bloqueio por whitelist.")
-    coord_file = st.file_uploader("Upload coordenadas_smac.csv ou .xlsx", type=["csv", "xlsx"])
+    st.caption("✅ Coordenadas autorizadas já estão embutidas no sistema.")
 
 # =========================
 # HTTP helpers
@@ -84,37 +175,6 @@ def http_put_form(url: str, data: dict, timeout: int = 30):
         return True, r.json() if r.text else {}, r.status_code, ""
     except Exception as e:
         return False, None, -1, str(e)
-
-# =========================
-# Carregar mapa de coordenadas (city+uf -> lat/lon)
-# =========================
-@st.cache_data(ttl=3600, show_spinner=False)
-def load_coord_map(file) -> dict:
-    if file is None:
-        return {}
-
-    if file.name.lower().endswith(".csv"):
-        df = pd.read_csv(file)
-    else:
-        df = pd.read_excel(file, engine="openpyxl")
-
-    # normaliza nomes de colunas
-    df.columns = [c.strip().lower() for c in df.columns]
-    required = {"city", "uf", "lat", "lon"}
-    if not required.issubset(set(df.columns)):
-        raise ValueError("Arquivo deve conter colunas: city, uf, lat, lon")
-
-    coord_map = {}
-    for _, row in df.iterrows():
-        key = (str(row["city"]).strip(), str(row["uf"]).strip().upper())
-        coord_map[key] = (float(row["lat"]), float(row["lon"]))
-    return coord_map
-
-coord_map = {}
-try:
-    coord_map = load_coord_map(coord_file)
-except Exception as e:
-    st.sidebar.error(str(e))
 
 # =========================
 # Geocoding fallback
@@ -312,12 +372,12 @@ with tab_hist:
             uf = SMAC_CITY_STATE[city]
             label = f"{city}-{uf}"
 
-            # 1) tenta coordenadas do mapa SMAC
+            # 1) Tenta coordenadas do mapa fixo (inserido direto no código)
             key = (city, uf)
-            latlon = coord_map.get(key)
+            latlon = SMAC_COORDS.get(key)
 
-            # 2) fallback: geocoding
-            coords_source = "mapa_smac"
+            # 2) Fallback: geocoding (caso falhe por algum motivo ou se adicionar cidades novas)
+            coords_source = "mapa_smac_embutido"
             if latlon is None:
                 coords_source = "geocoding_fallback"
                 try:
