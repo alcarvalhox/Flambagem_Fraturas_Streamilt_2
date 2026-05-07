@@ -13,8 +13,12 @@ API_MANAGER = "http://apiadvisor.climatempo.com.br/api-manager"
 GEOCODE_URL = "https://nominatim.openstreetmap.org/search"
 
 # Puxando as chaves DIRETAMENTE do cofre do Streamlit
-TOKEN_PREVISAO = st.secrets["TOKEN_PREVISAO"]
-TOKEN_HIST = st.secrets["TOKEN_HISTORICO"]
+try:
+    TOKEN_PREVISAO = st.secrets["TOKEN_PREVISAO"]
+    TOKEN_HIST = st.secrets["TOKEN_HISTORICO"]
+except KeyError:
+    st.error("Chaves não encontradas no st.secrets. Verifique as configurações no Streamlit Cloud.")
+    st.stop()
 
 MAX_DIAS = 60
 
@@ -49,13 +53,13 @@ SMAC_CITY_STATE = {
 SMAC_CITIES = sorted(SMAC_CITY_STATE.keys())
 
 # =========================
-# COORDENADAS FIXAS DO SMAC (Extraídas do CSV)
+# COORDENADAS FIXAS DO SMAC (Base Line)
 # =========================
 SMAC_COORDS = {
     ("Alumínio", "SP"): (-23.54, -47.26),
     ("Andrelândia", "MG"): (-21.74, -44.31),
     ("Arantina", "MG"): (-21.91, -44.26),
-    ("Barbacena", "MG"): (-21.23, -43.70),
+    ("Barbacena", "MG"): (-21.23, -43.77),
     ("Barra do Piraí", "RJ"): (-22.47, -43.83),
     ("Barra Mansa", "RJ"): (-22.54, -44.17),
     ("Belo Horizonte", "MG"): (-19.98, -43.959),
@@ -144,6 +148,24 @@ SMAC_COORDS = {
 }
 
 # =========================
+# Leitor de Arquivo Override
+# =========================
+@st.cache_data(ttl=3600, show_spinner=False)
+def load_coord_map(file) -> dict:
+    if file.name.lower().endswith(".csv"):
+        df = pd.read_csv(file)
+    else:
+        df = pd.read_excel(file, engine="openpyxl")
+    df.columns = [c.strip().lower() for c in df.columns]
+    if not {"city", "uf", "lat", "lon"}.issubset(set(df.columns)):
+        raise ValueError("Colunas obrigatórias: city, uf, lat, lon")
+    coord_map = {}
+    for _, row in df.iterrows():
+        key = (str(row["city"]).strip(), str(row["uf"]).strip().upper())
+        coord_map[key] = (float(row["lat"]), float(row["lon"]))
+    return coord_map
+
+# =========================
 # UI
 # =========================
 st.set_page_config(page_title="SMAC • Previsão & Histórico", layout="wide")
@@ -153,7 +175,18 @@ with st.sidebar:
     st.header("⚙️ Configurações")
     DEBUG = st.checkbox("Modo debug", value=False)
     st.divider()
-    st.caption("✅ Coordenadas autorizadas já estão embutidas no sistema.")
+    
+    st.subheader("🛠️ Corrigir Coordenadas")
+    st.caption("Caso alguma coordenada embutida mude no sistema da Climatempo, envie uma planilha (city, uf, lat, lon) para sobrescrevê-la.")
+    coord_file = st.file_uploader("Upload override_cidades.csv/xlsx (Opcional)", type=["csv", "xlsx"])
+
+    if coord_file:
+        try:
+            user_coords = load_coord_map(coord_file)
+            SMAC_COORDS.update(user_coords)
+            st.success(f"{len(user_coords)} coordenada(s) sobreposta(s) com sucesso!")
+        except Exception as e:
+            st.error(f"Erro ao ler arquivo: {str(e)}")
 
 # =========================
 # HTTP helpers
@@ -191,11 +224,12 @@ def geocode_city(city: str, uf: str):
     return float(data[0]["lat"]), float(data[0]["lon"])
 
 # =========================
-# Locale lookup (cidade+UF -> locale_id)
+# GERENCIAMENTO DE LOCALES E TOKENS (Baseado na Documentação)
 # =========================
 @st.cache_data(ttl=86400, show_spinner=False)
-def resolve_locale_id(city: str, uf: str, token_previsao: str):
-    url = f"{BASE_V1}/locale/city?name={quote(city)}&state={uf}&token={token_previsao}"
+def resolve_locale_id(city: str, uf: str, token: str):
+    """Busca o ID da cidade (Locale - Search city by name and state)"""
+    url = f"{BASE_V1}/locale/city?name={quote(city)}&state={uf}&token={token}"
     ok, payload, status, err = http_get(url)
     if not ok:
         raise RuntimeError(f"Erro ao resolver locale_id ({city}-{uf}). HTTP {status}: {err}")
@@ -203,9 +237,10 @@ def resolve_locale_id(city: str, uf: str, token_previsao: str):
         raise RuntimeError(f"Nenhum locale encontrado para {city}-{uf}")
     return int(payload[0]["id"])
 
-def registrar_locale_no_token(locale_id: int, token_previsao: str):
-    url = f"{API_MANAGER}/user-token/{token_previsao}/locales"
-    data = {"localeId[]": str(locale_id)}
+def registrar_locales_no_token(locales_ids: list, token: str):
+    """Registra uma lista de IDs de cidades em um Token (UserTokenManagement)"""
+    url = f"{API_MANAGER}/user-token/{token}/locales"
+    data = {"localeId[]": [str(loc_id) for loc_id in locales_ids]}
     return http_put_form(url, data=data)
 
 # =========================
@@ -298,7 +333,7 @@ def build_daily_summary(df_hourly: pd.DataFrame):
     return g
 
 # =========================
-# XLSX
+# XLSX Writer
 # =========================
 def to_xlsx(sheets: dict):
     buf = BytesIO()
@@ -308,7 +343,7 @@ def to_xlsx(sheets: dict):
     return buf.getvalue()
 
 # =========================
-# UI: Seleção das cidades SMAC
+# UI: Cidades Selecionadas
 # =========================
 st.subheader("📍 Cidades SMAC (pré-carregadas)")
 selected_cities = st.multiselect(
@@ -327,13 +362,27 @@ tab_prev, tab_hist = st.tabs(["🔮 Previsão (até 60 dias)", "🕒 Histórico 
 with tab_prev:
     dias_prev = st.slider("Dias de previsão", 1, MAX_DIAS, 15)
     if st.button("Gerar Previsão (XLSX)", use_container_width=True):
+        
+        # 1) Resolver IDs e registrar TODAS no TOKEN_PREVISAO de uma vez
+        locale_ids_prev = []
+        for city in selected_cities:
+            uf = SMAC_CITY_STATE[city]
+            try:
+                lid = resolve_locale_id(city, uf, TOKEN_PREVISAO)
+                locale_ids_prev.append(lid)
+            except Exception as e:
+                st.error(f"Erro ao buscar ID de {city}: {e}")
+                
+        if locale_ids_prev:
+            registrar_locales_no_token(locale_ids_prev, TOKEN_PREVISAO)
+
+        # 2) Efetuar a busca
         all_df = []
         for city in selected_cities:
             uf = SMAC_CITY_STATE[city]
             label = f"{city}-{uf}"
             try:
                 locale_id = resolve_locale_id(city, uf, TOKEN_PREVISAO)
-                registrar_locale_no_token(locale_id, TOKEN_PREVISAO)
                 ok, days, status, err, used = fetch_forecast(locale_id, dias_prev, TOKEN_PREVISAO)
                 if not ok:
                     st.error(f"{label}: previsão falhou (HTTP {status})")
@@ -365,6 +414,23 @@ with tab_hist:
     data_inicio = st.date_input("Data inicial", value=date.today() - timedelta(days=dias_hist))
 
     if st.button("Gerar Histórico (Hourly + Diário) (XLSX)", use_container_width=True):
+        
+        # 1) O PULO DO GATO: Resolver IDs e registrar no TOKEN_HIST antes da busca
+        locale_ids_hist = []
+        for city in selected_cities:
+            uf = SMAC_CITY_STATE[city]
+            try:
+                lid = resolve_locale_id(city, uf, TOKEN_HIST)
+                locale_ids_hist.append(lid)
+            except Exception as e:
+                st.error(f"Erro ao buscar ID de {city}: {e}")
+                
+        if locale_ids_hist:
+            ok, payload, status, err = registrar_locales_no_token(locale_ids_hist, TOKEN_HIST)
+            if not ok:
+                st.warning(f"Aviso: Não foi possível registrar as cidades no Token de Histórico. A busca por latitude pode falhar (HTTP {status}).")
+
+        # 2) Agora as Latitudes estarão liberadas na whitelist! Efetuar busca.
         hourly_all = []
         daily_all = []
 
@@ -372,18 +438,16 @@ with tab_hist:
             uf = SMAC_CITY_STATE[city]
             label = f"{city}-{uf}"
 
-            # 1) Tenta coordenadas do mapa fixo (inserido direto no código)
             key = (city, uf)
             latlon = SMAC_COORDS.get(key)
-
-            # 2) Fallback: geocoding (caso falhe por algum motivo ou se adicionar cidades novas)
             coords_source = "mapa_smac_embutido"
+
             if latlon is None:
                 coords_source = "geocoding_fallback"
                 try:
                     latlon = geocode_city(city, uf)
                 except Exception as e:
-                    st.error(f"{label}: falha ao obter coordenadas automaticamente ({coords_source})")
+                    st.error(f"{label}: falha ao obter coordenadas automaticamente.")
                     if DEBUG: st.code(str(e))
                     continue
 
@@ -393,11 +457,12 @@ with tab_hist:
             for i in range(dias_hist):
                 d = data_inicio + timedelta(days=i)
                 ok, payload, status, err = history_geo_hourly(lat, lon, d, TOKEN_HIST)
+                
                 if not ok:
                     st.warning(f"{label} em {d}: HTTP {status}")
                     if DEBUG: st.code(err)
                     if "Latitude and Longitude not allowed" in (err or ""):
-                        st.error(f"{label}: coordenadas recusadas (whitelist). Fonte={coords_source}, lat/lon=({lat},{lon})")
+                        st.error(f"⛔ Bloqueio mantido pela API para as coordenadas ({lat}, {lon}) de {label}.")
                         break
                     continue
 
@@ -420,7 +485,7 @@ with tab_hist:
             out_hourly = pd.concat(hourly_all, ignore_index=True)
             out_daily = pd.concat(daily_all, ignore_index=True) if daily_all else pd.DataFrame()
 
-            st.subheader("📊 Visualização na tela (completa)")
+            st.subheader("📊 Visualização na tela")
             modo = st.radio("Visualizar:", ["Resumo Diário", "Histórico Horário (Raw)"], horizontal=True)
             df_view = out_daily.copy() if modo == "Resumo Diário" else out_hourly.copy()
 
@@ -442,5 +507,3 @@ with tab_hist:
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True
             )
-        else:
-            st.warning("Nenhum histórico foi gerado. Veja as mensagens acima.")
